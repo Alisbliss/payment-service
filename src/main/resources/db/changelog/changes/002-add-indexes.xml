@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <changeSet id="002-add-indexes" author="alesia">
+        <createIndex tableName="payments" indexName="idx_payments_order_id">
+            <column name="order_id"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_user_id_timestamp">
+            <column name="user_id"/>
+            <column name="timestamp"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_timestamp">
+            <column name="timestamp"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
