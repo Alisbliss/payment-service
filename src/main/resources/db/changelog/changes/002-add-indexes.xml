@@ -14,10 +14,10 @@
         </createIndex>
         <createIndex tableName="payments" indexName="idx_payments_user_id_timestamp">
             <column name="user_id"/>
-            <column name="timestamp"/>
+            <column name="payment_timestamp"/>
         </createIndex>
         <createIndex tableName="payments" indexName="idx_payments_timestamp">
-            <column name="timestamp"/>
+            <column name="payment_timestamp"/>
         </createIndex>
     </changeSet>
 </databaseChangeLog>

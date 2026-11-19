@@ -18,7 +18,8 @@ public interface PaymentRepository extends JpaRepository <Payment, Long>, JpaSpe
               AND p.timestamp BETWEEN :from AND :to
             """)
     BigDecimal sumByUserIdAndTimestampBetween(@Param("userId") Long userId,
-                                              @Param("from") LocalDateTime from,@Param("to") LocalDateTime to);
+                                              @Param("from") LocalDateTime from,
+                                              @Param("to") LocalDateTime to);
     @Query("""
             SELECT COALESCE(SUM(p.paymentAmount), 0)
             FROM Payment p

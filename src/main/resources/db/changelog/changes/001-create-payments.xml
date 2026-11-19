@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
 
-    <changeSet id="001-create-user-payments" author="alesia">
+    <changeSet id="001-create-payments" author="alesia">
         <createTable tableName="payments">
             <column name="id" type="BIGINT" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
@@ -19,7 +19,7 @@
             <column name="status" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="timestamp" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+            <column name="payment_timestamp" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
             <column name="payment_amount" type="DECIMAL(19,2)">
@@ -30,7 +30,7 @@
         <sql>
             ALTER TABLE payments
                 ADD CONSTRAINT chk_payment_status
-                    CHECK (status IN ('CREATED','SUCCESS','FAILED'));
+                    CHECK (status IN ('SUCCESS','FAILED'));
         </sql>
     </changeSet>
 </databaseChangeLog>

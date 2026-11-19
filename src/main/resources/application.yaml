@@ -12,3 +12,31 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
     enabled: true
+
+order-service:
+  url: ${ORDER_SERVICE_URL:http://order-service:8083}
+
+random-api:
+  url: ${RANDOM_API_URL:https://www.randomnumberapi.com/api/v1.0}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+      randomApi:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+  timelimiter:
+    instances:
+      orderService:
+        timeout-duration: 3s
+      randomApi:
+        timeout-duration: 3s
