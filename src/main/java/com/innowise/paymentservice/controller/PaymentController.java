@@ -35,14 +35,14 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or @paymentService.isOrderOwner(#request.orderId, authentication.principal.claims['user_id'])")
+    @PreAuthorize("hasRole('ADMIN') or @paymentService.isOrderOwner(#request.orderId, T(java.lang.Long).valueOf(authentication.principal.claims['userId'].toString()))")
     public ResponseEntity<PaymentResponse> create(
             @Valid @RequestBody PaymentCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.create(request));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @paymentService.isPaymentOwner(#id, authentication.principal.claims['user_id'])")
+    @PreAuthorize("hasRole('ADMIN') or @paymentService.isPaymentOwner(#id, T(java.lang.Long).valueOf(authentication.principal.claims['userId'].toString()))")
     public ResponseEntity<PaymentResponse> getById(
             @PathVariable String id) {
         return ResponseEntity.ok(paymentService.getById(id));
@@ -87,9 +87,9 @@ public class PaymentController {
     }
 
     private Long extractUserId(Jwt jwt) {
-        String userId = jwt.getClaimAsString("user_id");
+        String userId = jwt.getClaimAsString("userId");
         if (userId == null) {
-            throw new InvalidTokenException("Token does not contain user_id claim");
+            throw new InvalidTokenException("Token does not contain userId claim");
         }
         return Long.valueOf(userId);
     }

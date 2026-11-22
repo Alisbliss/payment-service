@@ -98,7 +98,7 @@ class PaymentFlowIntegrationTest {
             String type = parts.length > 3 ? parts[3] : "access";
             return Jwt.withTokenValue(token)
                     .header("alg", "RS256")
-                    .claim("user_id", userId)
+                    .claim("userId", userId)
                     .claim("role", role)
                     .claim("type", type)
                     .build();
