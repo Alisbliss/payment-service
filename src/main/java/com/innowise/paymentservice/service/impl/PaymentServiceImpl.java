@@ -7,20 +7,21 @@ import com.innowise.paymentservice.dto.PaymentCreateRequest;
 import com.innowise.paymentservice.dto.PaymentResponse;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
+import com.innowise.paymentservice.event.PaymentCreatedEvent;
+import com.innowise.paymentservice.event.PaymentEventProducer;
 import com.innowise.paymentservice.exception.PaymentNotFoundException;
 import com.innowise.paymentservice.mapper.PaymentMapper;
 import com.innowise.paymentservice.repository.PaymentRepository;
-import com.innowise.paymentservice.repository.specification.PaymentSpecification;
 import com.innowise.paymentservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Slf4j
 @Service("paymentService")
@@ -31,9 +32,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentMapper paymentMapper;
     private final OrderServiceClient orderServiceClient;
     private final RandomNumberService randomNumberService;
+    private final PaymentEventProducer paymentEventProducer;
 
     @Override
-    @Transactional
     public PaymentResponse create(PaymentCreateRequest request) {
         OrderInfoResponse order = orderServiceClient.getByOrderId(request.getOrderId());
         int random = randomNumberService.getNumber();
@@ -44,14 +45,33 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setUserId(order.getUserId());
         payment.setStatus(status);
         payment.setPaymentAmount(order.getTotalPrice());
+        payment.setTimestamp(LocalDateTime.now());
 
         Payment saved = paymentRepository.save(payment);
+        publishCreatedEvent(saved);
         return toResponse(saved, order);
     }
 
+    private void publishCreatedEvent(Payment payment) {
+        PaymentCreatedEvent event = PaymentCreatedEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .eventType("CREATE_PAYMENT")
+                .paymentId(payment.getId())
+                .orderId(payment.getOrderId())
+                .userId(payment.getUserId())
+                .status(payment.getStatus())
+                .amount(payment.getPaymentAmount())
+                .timestamp(payment.getTimestamp())
+                .build();
+        try {
+            paymentEventProducer.send(event);
+        } catch (Exception e) {
+            log.error("Failed to publish CREATE_PAYMENT event for order {}", payment.getOrderId(), e);
+        }
+    }
+
     @Override
-    @Transactional(readOnly = true)
-    public PaymentResponse getById(Long id) {
+    public PaymentResponse getById(String id) {
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found: " + id));
         OrderInfoResponse order = orderServiceClient.getByOrderId(payment.getOrderId());
@@ -59,26 +79,22 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<PaymentResponse> getAll(Long userId, Long orderId, Status status, Pageable pageable) {
-        return paymentRepository.findAll(PaymentSpecification.filter(userId, orderId, status), pageable)
+        return paymentRepository.findPayments(userId, orderId, status, pageable)
                 .map(payment -> toResponse(payment, orderServiceClient.getByOrderId(payment.getOrderId())));
     }
 
     @Override
-    @Transactional(readOnly = true)
     public BigDecimal getTotalForCurrentUser(Long userId, LocalDateTime from, LocalDateTime to) {
-        return paymentRepository.sumByUserIdAndTimestampBetween(userId, from, to);
+        return paymentRepository.sumForUser(userId, from, to);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public BigDecimal getTotalForAllUsers(LocalDateTime from, LocalDateTime to) {
-        return paymentRepository.sumByTimestampBetween(from, to);
+        return paymentRepository.sumAll(from, to);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public boolean isOrderOwner(Long orderId, Long currentUserId) {
         if (orderId == null || currentUserId == null) {
             return false;
@@ -88,8 +104,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean isPaymentOwner(Long paymentId, Long currentUserId) {
+    public boolean isPaymentOwner(String paymentId, Long currentUserId) {
         if (paymentId == null || currentUserId == null) {
             return false;
         }

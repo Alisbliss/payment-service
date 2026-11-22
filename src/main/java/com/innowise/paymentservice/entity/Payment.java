@@ -1,52 +1,39 @@
 package com.innowise.paymentservice.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "payments")
+@Document(collection = "payments")
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
 public class Payment {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(name = "user_id", nullable = false)
+    @Field("user_id")
     private Long userId;
 
-    @Column(name = "order_id", nullable = false)
+    @Field("order_id")
     private Long orderId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Field("status")
     private Status status;
 
-    @CreatedDate
-    @Column(name = "payment_timestamp", nullable = false, updatable = false)
+    @Field("payment_timestamp")
     private LocalDateTime timestamp;
 
-    @Column(name = "payment_amount", nullable = false, precision = 19, scale = 2)
+    @Field("payment_amount")
     private BigDecimal paymentAmount;
 }

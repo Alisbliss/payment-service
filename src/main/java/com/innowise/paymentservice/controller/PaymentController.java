@@ -44,7 +44,7 @@ public class PaymentController {
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @paymentService.isPaymentOwner(#id, authentication.principal.claims['user_id'])")
     public ResponseEntity<PaymentResponse> getById(
-            @PathVariable Long id) {
+            @PathVariable String id) {
         return ResponseEntity.ok(paymentService.getById(id));
     }
 

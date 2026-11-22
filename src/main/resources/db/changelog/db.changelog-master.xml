@@ -2,8 +2,11 @@
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:ext="http://www.liquibase.org/xml/ns/mongodb"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd
+        http://www.liquibase.org/xml/ns/mongodb
+        http://www.liquibase.org/xml/ns/mongodb/liquibase-mongodb-latest.xsd">
 
     <include file="db/changelog/changes/001-create-payments.xml"/>
     <include file="db/changelog/changes/002-add-indexes.xml"/>

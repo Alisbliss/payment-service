@@ -21,7 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+import com.innowise.paymentservice.event.PaymentEventProducer;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -44,6 +44,7 @@ class PaymentServiceImplTest {
     @Mock private PaymentMapper paymentMapper;
     @Mock private OrderServiceClient orderServiceClient;
     @Mock private RandomNumberService randomNumberService;
+    @Mock private PaymentEventProducer paymentEventProducer;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
@@ -62,7 +63,7 @@ class PaymentServiceImplTest {
 
     private Payment payment(Long id, Long userId, Status status, String amount) {
         Payment p = new Payment();
-        p.setId(id);
+        p.setId(String.valueOf(id));
         p.setOrderId(1L);
         p.setUserId(userId);
         p.setStatus(status);
@@ -126,10 +127,10 @@ class PaymentServiceImplTest {
         OrderInfoResponse order = orderInfo(1L, 5L, "100.00");
         PaymentResponse response = new PaymentResponse();
 
-        when(paymentRepository.findById(1L)).thenReturn(Optional.of(p));
+        when(paymentRepository.findById("1")).thenReturn(Optional.of(p));
         when(orderServiceClient.getByOrderId(1L)).thenReturn(order);
         when(paymentMapper.toResponse(p)).thenReturn(response);
-        PaymentResponse result = paymentService.getById(1L);
+        PaymentResponse result = paymentService.getById("1");
 
         assertThat(result).isSameAs(response);
         assertThat(response.getOrder()).isEqualTo(order);
@@ -137,9 +138,9 @@ class PaymentServiceImplTest {
 
     @Test
     void getById_shouldThrowWhenNotFound() {
-        when(paymentRepository.findById(99L)).thenReturn(Optional.empty());
+        when(paymentRepository.findById("99")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.getById(99L))
+        assertThatThrownBy(() -> paymentService.getById("99"))
                 .isInstanceOf(PaymentNotFoundException.class)
                 .hasMessageContaining("Payment not found: 99");
     }
@@ -153,7 +154,7 @@ class PaymentServiceImplTest {
         OrderInfoResponse order = orderInfo(1L, 5L, "100.00");
         PaymentResponse response = new PaymentResponse();
 
-        when(paymentRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(page);
+        when(paymentRepository.findPayments(5L, null, null, pageable)).thenReturn(page);
         when(orderServiceClient.getByOrderId(1L)).thenReturn(order);
         when(paymentMapper.toResponse(p)).thenReturn(response);
         Page<PaymentResponse> result = paymentService.getAll(5L, null, null, pageable);
@@ -167,7 +168,7 @@ class PaymentServiceImplTest {
     void getTotalForCurrentUser_shouldDelegateToRepository() {
         LocalDateTime from = LocalDateTime.now().minusDays(1);
         LocalDateTime to = LocalDateTime.now().plusDays(1);
-        when(paymentRepository.sumByUserIdAndTimestampBetween(5L, from, to))
+        when(paymentRepository.sumForUser(5L, from, to))
                 .thenReturn(new BigDecimal("150.00"));
         BigDecimal total = paymentService.getTotalForCurrentUser(5L, from, to);
 
@@ -178,7 +179,7 @@ class PaymentServiceImplTest {
     void getTotalForAllUsers_shouldDelegateToRepository() {
         LocalDateTime from = LocalDateTime.now().minusDays(1);
         LocalDateTime to = LocalDateTime.now().plusDays(1);
-        when(paymentRepository.sumByTimestampBetween(from, to))
+        when(paymentRepository.sumAll(from, to))
                 .thenReturn(new BigDecimal("175.00"));
         BigDecimal total = paymentService.getTotalForAllUsers(from, to);
 
@@ -208,25 +209,25 @@ class PaymentServiceImplTest {
 
     @Test
     void isPaymentOwner_shouldReturnTrueForOwner() {
-        when(paymentRepository.findById(1L))
+        when(paymentRepository.findById("1"))
                 .thenReturn(Optional.of(payment(1L, 5L, Status.SUCCESS, "100.00")));
 
-        assertThat(paymentService.isPaymentOwner(1L, 5L)).isTrue();
+        assertThat(paymentService.isPaymentOwner("1", 5L)).isTrue();
     }
 
     @Test
     void isPaymentOwner_shouldReturnFalseForAnotherUser() {
-        when(paymentRepository.findById(1L))
+        when(paymentRepository.findById("1"))
                 .thenReturn(Optional.of(payment(1L, 5L, Status.SUCCESS, "100.00")));
 
-        assertThat(paymentService.isPaymentOwner(1L, 99L)).isFalse();
+        assertThat(paymentService.isPaymentOwner("1", 99L)).isFalse();
     }
 
     @Test
     void isPaymentOwner_shouldThrowWhenPaymentNotFound() {
-        when(paymentRepository.findById(99L)).thenReturn(Optional.empty());
+        when(paymentRepository.findById("99")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.isPaymentOwner(99L, 5L))
+        assertThatThrownBy(() -> paymentService.isPaymentOwner("99", 5L))
                 .isInstanceOf(PaymentNotFoundException.class)
                 .hasMessageContaining("Payment not found: 99");
     }
@@ -234,6 +235,6 @@ class PaymentServiceImplTest {
     @Test
     void isPaymentOwner_shouldReturnFalseWhenNullArgs() {
         assertThat(paymentService.isPaymentOwner(null, 5L)).isFalse();
-        assertThat(paymentService.isPaymentOwner(1L, null)).isFalse();
+        assertThat(paymentService.isPaymentOwner("1", null)).isFalse();
     }
 }

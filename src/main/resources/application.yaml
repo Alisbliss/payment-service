@@ -4,14 +4,20 @@ server:
 spring:
   application:
     name: payment-service
-  datasource:
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://localhost:27017/paymentdb}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
-    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        max.block.ms: 5000
+    topic:
+      create-payment: ${KAFKA_TOPIC_CREATE_PAYMENT:create-payment}
 
 order-service:
   url: ${ORDER_SERVICE_URL:http://order-service:8083}

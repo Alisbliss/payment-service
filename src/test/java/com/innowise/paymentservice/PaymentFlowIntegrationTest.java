@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import com.innowise.paymentservice.dto.PaymentCreateRequest;
 import com.innowise.paymentservice.entity.Payment;
 import com.innowise.paymentservice.entity.Status;
+import com.innowise.paymentservice.event.PaymentEventProducer;
 import com.innowise.paymentservice.repository.PaymentRepository;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -21,7 +22,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.ObjectMapper;
@@ -47,14 +48,16 @@ class PaymentFlowIntegrationTest {
     @MockitoBean
     private JwtDecoder jwtDecoder;
 
+    @MockitoBean
+    private PaymentEventProducer paymentEventProducer;
+
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+    static MongoDBContainer mongo = new MongoDBContainer("mongo:7");
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.mongodb.uri", () -> "mongodb://" + mongo.getHost() + ":"
+                + mongo.getMappedPort(27017) + "/paymentdb?directConnection=true");
         registry.add("order-service.url", () -> "http://localhost:" + wireMock.port());
         registry.add("random-api.url", () -> "http://localhost:" + wireMock.port());
         registry.add("spring.security.oauth2.resourceserver.jwt.jwk-set-uri",
@@ -103,7 +106,7 @@ class PaymentFlowIntegrationTest {
         this.userToken = "token-5-USER";
 
         //Order Service stub-order belongs to user 5
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/orders/id/.*"))
+        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/orders/.*"))
                 .willReturn(WireMock.aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -180,7 +183,7 @@ class PaymentFlowIntegrationTest {
 
     @Test
     void create_shouldReturn403WhenOrderBelongsToAnotherUser() throws Exception {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/orders/id/.*"))
+        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/orders/.*"))
                 .willReturn(WireMock.aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -197,7 +200,7 @@ class PaymentFlowIntegrationTest {
 
     @Test
     void create_shouldReturn503WhenOrderServiceUnavailable() throws Exception {
-        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/orders/id/.*"))
+        WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/orders/.*"))
                 .willReturn(WireMock.aResponse().withStatus(500)));
 
         mockMvc.perform(post("/api/payments")

@@ -11,10 +11,10 @@ import java.time.LocalDateTime;
 
 public interface PaymentService {
     PaymentResponse create(PaymentCreateRequest request);
-    PaymentResponse getById(Long id);
+    PaymentResponse getById(String id);
     Page<PaymentResponse> getAll(Long userId, Long orderId, Status status, Pageable pageable);
     BigDecimal getTotalForCurrentUser(Long userId, LocalDateTime from, LocalDateTime to);
     BigDecimal getTotalForAllUsers(LocalDateTime from, LocalDateTime to);
     boolean isOrderOwner(Long orderId, Long currentUserId);
-    boolean isPaymentOwner(Long paymentId, Long currentUserId);
+    boolean isPaymentOwner(String paymentId, Long currentUserId);
 }
