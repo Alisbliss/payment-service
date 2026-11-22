@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "feature/**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test-analyze-package:
+    name: Build, Test, Analyze, Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build
+        run: mvn -B clean compile
+
+      - name: Test
+        run: mvn -B test
+
+      - name: Code analysis (SonarCloud, optional)
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORG: ${{ secrets.SONAR_ORG }}
+        run: >
+          mvn -B sonar:sonar
+          -Dsonar.projectKey=payment-service
+          -Dsonar.organization=${SONAR_ORG}
+
+      - name: Build Docker image
+        run: docker build -t payment-service:${{ github.sha }} .
+
+      - name: Save Docker image
+        run: docker save payment-service:${{ github.sha }} -o payment-service.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: payment-service-docker-image
+          path: payment-service.tar
+          retention-days: 7
