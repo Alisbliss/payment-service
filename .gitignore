@@ -34,3 +34,6 @@ build/
 
 ### Local config ###
 application-local.yml
+.env
+*.env
+!.env.example

@@ -30,15 +30,15 @@ jobs:
       - name: Test
         run: mvn -B test
 
-      - name: Code analysis (SonarCloud, optional)
+      - name: SonarQube Scan (optional)
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_ORG: ${{ secrets.SONAR_ORG }}
         run: >
           mvn -B sonar:sonar
-          -Dsonar.projectKey=payment-service
-          -Dsonar.organization=${SONAR_ORG}
+          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+          -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+          -Dsonar.host.url=https://sonarcloud.io    
 
       - name: Build Docker image
         run: docker build -t payment-service:${{ github.sha }} .
