@@ -41,6 +41,7 @@ public class SecurityConfig {
                         -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o
                         -> o.jwt(j -> j.jwtAuthenticationConverter(jwtAuthConverter())))
