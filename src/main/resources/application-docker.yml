@@ -1,0 +1,16 @@
+spring:
+  mongodb:
+    uri: ${MONGODB_URI:mongodb://mongodb:27017/paymentdb}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${JWK_SET_URI:http://auth-service:8082/.well-known/jwks.json}
+
+order-service:
+  url: ${ORDER_SERVICE_URL:http://order-service:8083}
+
+random-api:
+  url: ${RANDOM_API_URL:https://www.randomnumberapi.com/api/v1.0}
